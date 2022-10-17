@@ -34,32 +34,49 @@ class PostsView(views.APIView):
         return Response(serializer.errors)
 
 
-class LikesView(views.APIView):
+class PostView(views.APIView):
+    """Single Post View"""
+
+    serializer_clas = PostSerializer
+
+    def get(self, request, id):
+        """Getting Single Post"""
+
+        queryset = Post.objects.get(id=id)
+        serializer = PostSerializer(queryset)
+        return Response(serializer.data)
+
+
+class LikeView(views.APIView):
     """This is the view to like"""
 
-    def post(self, request, pk):
+    def post(self, request, id):
         """Here is the post view"""
-        post = Post.objects.get(pk=pk)
+        post = Post.objects.get(id=id)
         user_id = request.data.get("user_id")
         user = User.objects.get(id=user_id)
         post.likes.add(user)
         return Response("Like added")
 
-    def get(self, request, pk):
-        """Here is the get view"""
-
-        post = Post.objects.get(pk=pk)
-        serializer = LikeSerializer(post)
-        likes = serializer.data
-        return Response(likes)
-
 
 class DislikeView(views.APIView):
     """This is the view to like"""
 
-    def post(self, request, pk):
-        """Here is the like or dislike view"""
+    def post(self, request, id):
+        """Here is the post view"""
+        post_object = Post.objects.get(id=id)
+        user_id = request.data.get("user_id")
+        user = User.objects.get(id=user_id)
+        post_object.likes.remove(user)
+        return Response("Like removed")
 
-        post = Post.objects.get(pk=pk)
-        user = request.data.get("user_id")
-        post.likes.remove(user)
+
+class LikesView(views.APIView):
+    """This is the view to like"""
+
+    def get(self, request, id):
+        """Here is the get view"""
+
+        post = Post.objects.get(id=id)
+        serializer = LikeSerializer(post)
+        return Response(serializer.data)

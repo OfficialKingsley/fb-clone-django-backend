@@ -4,6 +4,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import views
 from rest_framework.response import Response
+from rest_framework import status
 from core.models import FriendRequest, Notification
 from core.serializers import (
     FriendRequestSerializer,
@@ -33,12 +34,27 @@ class UsersView(views.APIView):
 class UserView(views.APIView):
     """View To Get A Single User"""
 
+    serializer_class = UserSerializer
+
     def get(self, request, id):
         queryset = User.objects.get(id=id)
         serializer = UserSerializer(queryset)
         return Response(serializer.data)
 
-    # def put(self, request, id):
+    def put(self, request, id):
+        queryset = User.objects.get(id=id)
+
+        if isinstance(request.data.get("profile_image"), str):
+            queryset.profile_image = queryset.profile_image
+        if isinstance(request.data.get("cover_image"), str):
+            queryset.cover_image = queryset.cover_image
+
+        serializer = UserSerializer(queryset, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors)
 
 
 class RegisterView(views.APIView):
