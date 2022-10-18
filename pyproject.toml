@@ -12,6 +12,8 @@ whitenoise = {extras = ["brotli"], version = "^6.2.0"}
 dj-database-url = "^1.0.0"
 psycopg2-binary = "^2.9.4"
 djangorestframework = "^3.14.0"
+django = "^4.1.2"
+django-cors-headers = "^3.13.0"
 
 
 [tool.poetry.group.dev.dependencies]
