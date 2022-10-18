@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "python"
+name = "fb-clone-django-backend"
 version = "0.1.0"
 description = ""
 authors = ["Kingsley <kingsleyihemelanduofficial@gmail.com>"]
