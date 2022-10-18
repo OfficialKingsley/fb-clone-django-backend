@@ -9,4 +9,7 @@ poetry env use 3.10
 poetry install
 
 python manage.py collectstatic --no-input
+
+python manage.py loaddata data.json
+
 python manage.py migrate
