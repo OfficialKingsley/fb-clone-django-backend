@@ -2,6 +2,7 @@
 
 # set -0 errexit
 
+pip install poetry -U
 poetry env use 3.10
 poetry install
 
