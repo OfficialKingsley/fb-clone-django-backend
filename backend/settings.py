@@ -94,7 +94,7 @@ WSGI_APPLICATION = "backend.wsgi.application"
 
 DATABASES = {
     "default": dj_database_url.config(
-        default="postgresql://postgres:postgres@localhost:5432/backend",
+        default="postgres://kingsley:zFfCEeqDE68vLqdKMJIY29NcQd6Cvcpf@dpg-cd71t5ien0hguptipno0-a.oregon-postgres.render.com/fbclone",
         conn_max_age=600,
     ),
     #     {
