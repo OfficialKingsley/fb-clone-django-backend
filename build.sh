@@ -2,6 +2,8 @@
 
 set -0 errexit
 
+. .venv/Scripts/activate
+
 poetry install
 
 python manage.py collectstatic --no-input
