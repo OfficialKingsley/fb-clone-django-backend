@@ -21,7 +21,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", default="parametersofafunction")
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY",
+    default="postgres://kingsley:zFfCEeqDE68vLqdKMJIY29NcQd6Cvcpf@dpg-cd71t5ien0hguptipno0-a.oregon-postgres.render.com/fbclone",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = "RENDER" not in os.environ
@@ -60,6 +63,10 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
+
 REST_FRAMEWORK = {
     # "DEFAULT_AUTHENTICATION_CLASSES": [
     #     "rest_framework_simplejwt.authentication.JWTAuthentication"
@@ -93,14 +100,15 @@ WSGI_APPLICATION = "backend.wsgi.application"
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 DATABASES = {
-    "default": dj_database_url.config(
-        default="postgres://kingsley:zFfCEeqDE68vLqdKMJIY29NcQd6Cvcpf@dpg-cd71t5ien0hguptipno0-a.oregon-postgres.render.com/fbclone",
-        conn_max_age=600,
-    ),
-    #     {
-    #     "ENGINE": "django.db.backends.sqlite3",
-    #     "NAME": BASE_DIR / "db.sqlite3",
-    # }
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+    # dj_database_url.config(
+    #     default="postgres://kingsley:zFfCEeqDE68vLqdKMJIY29NcQd6Cvcpf@dpg-cd71t5ien0hguptipno0-a.oregon-postgres.render.com/fbclone",
+    #     conn_max_age=600,
+    # ),
+    #
 }
 
 # Password validation
@@ -141,7 +149,9 @@ STATIC_URL = "static/"
 
 if not DEBUG:
     STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaicFilesStorage"
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# else:
+#     STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
 STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
 
