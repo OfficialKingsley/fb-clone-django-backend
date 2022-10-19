@@ -100,15 +100,10 @@ WSGI_APPLICATION = "backend.wsgi.application"
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-    # dj_database_url.config(
-    #     default="postgres://kingsley:zFfCEeqDE68vLqdKMJIY29NcQd6Cvcpf@dpg-cd71t5ien0hguptipno0-a.oregon-postgres.render.com/fbclone",
-    #     conn_max_age=600,
-    # ),
-    #
+    "default": dj_database_url.config(
+        default="postgres://kingsley:zFfCEeqDE68vLqdKMJIY29NcQd6Cvcpf@dpg-cd71t5ien0hguptipno0-a.oregon-postgres.render.com/fbclone",
+        conn_max_age=600,
+    ),
 }
 
 # Password validation
@@ -153,7 +148,7 @@ if not DEBUG:
 # else:
 #     STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
-STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
+# STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
 
 MEDIA_ROOT = BASE_DIR / "uploads/"
 MEDIA_URL = "uploads/"
