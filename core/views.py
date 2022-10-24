@@ -1,22 +1,19 @@
-# from django.shortcuts import render
-# from django.conf import settings
-
-from django.contrib.auth import get_user_model
-from rest_framework import views
+from django.contrib.auth import get_user_model, login, logout
+from django.shortcuts import get_object_or_404
+from posts.models import Post
+from posts.serializers import PostSerializer
+from rest_framework import status, views
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
-from rest_framework import status
+
 from core.models import FriendRequest, Notification
 from core.serializers import (
     FriendRequestSerializer,
-    NotificationSerializer,
-    UserSerializer,
-    RegisterSerializer,
     LoginSerializer,
+    NotificationSerializer,
+    RegisterSerializer,
+    UserSerializer,
 )
-from .functions import get_user
-
-from posts.models import Post
-from posts.serializers import PostSerializer
 
 User = get_user_model()
 
@@ -34,27 +31,32 @@ class UsersView(views.APIView):
 class UserView(views.APIView):
     """View To Get A Single User"""
 
+    # TODO:`IsObjectOwnerOrReadOnly`
+    # Allows only the owner of the account to perform write operations
+    # Allows unauthenticated users to view the account details
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
     serializer_class = UserSerializer
 
     def get(self, request, id):
-        queryset = User.objects.get(id=id)
+        queryset = get_object_or_404(User, id=id)
         serializer = UserSerializer(queryset)
+
         return Response(serializer.data)
 
     def put(self, request, id):
-        queryset = User.objects.get(id=id)
+        queryset = get_object_or_404(User, id=id)
 
-        if isinstance(request.data.get("profile_image"), str):
-            queryset.profile_image = queryset.profile_image
-        if isinstance(request.data.get("cover_image"), str):
-            queryset.cover_image = queryset.cover_image
+        serializer = UserSerializer(
+            queryset,
+            data=request.data,
+            partial=True,
+            context={"request": request},  # pass this to process files in serializer
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-        serializer = UserSerializer(queryset, data=request.data, partial=True)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors)
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
 
 class RegisterView(views.APIView):
@@ -66,13 +68,10 @@ class RegisterView(views.APIView):
     def post(self, request):
         """This is the post function for the register view"""
         serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-    def get(self, request):
-        return Response({"message": "Get Request Not Allowed"})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class LoginView(views.APIView):
@@ -82,20 +81,21 @@ class LoginView(views.APIView):
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            queryset = User.objects.filter(email=request.data["email"]).first()
-            user = get_user(queryset)
-            serializer.save()
-            return Response(user)
-        return Response(serializer.errors)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()  # not sure it's needed
+
+        login(request, serializer.instance)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class LogoutView(views.APIView):
-    def post(self, request, id):
-        user = User.objects.filter(id=id).first()
-        user.is_active = False
-        user.save()
-        return Response({"message": "Successfully logged out"})
+    def post(self, request):
+        logout(request)
+
+        return Response(
+            {"message": "Successfully logged out"}, status=status.HTTP_205_RESET_CONTENT
+        )
 
 
 class PostsView(views.APIView):
@@ -107,41 +107,62 @@ class PostsView(views.APIView):
 
 
 class FriendRequestsView(views.APIView):
-    def get(self, request, id):
+
+    # TODO: `IsObjectOwner`
+    permission_classess = [IsAuthenticated]
+
+    def get(self, request):
+        id = request.user.id
         queryset = FriendRequest.objects.filter(receiver=id)
         serializer = FriendRequestSerializer(queryset, many=True)
         return Response(serializer.data)
 
 
 class SentRequestsView(views.APIView):
-    def get(self, request, id):
+
+    # TODO: `IsObjectOwner`
+    permission_classess = [IsAuthenticated]
+
+    def get(self, request):
+        id = request.user.id
+
         queryset = FriendRequest.objects.filter(sender=id)
         serializer = FriendRequestSerializer(queryset, many=True)
         return Response(serializer.data)
 
 
 class FriendRequestView(views.APIView):
+
+    # TODO: `IsObjectOwner`
+    permission_classess = [IsAuthenticated]
     serializer_class = FriendRequestSerializer
 
-    def post(self, request, id):
-        serializer = FriendRequestSerializer(data=request.data)
+    def post(self, request):
+        id = request.user.id
+
         sender_id = request.data.get("sender")
         user_sender = User.objects.get(id=sender_id)
         user_receiver = User.objects.get(id=id)
+
+        serializer = FriendRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
         notification = Notification(
             user_for=user_receiver,
             message=f"{user_sender.full_name} just sent you a friend request",
         )
-        if serializer.is_valid():
-            serializer.save()
-            notification.save()
-            return Response(serializer.data)
-        return Response(serializer.errors)
+        notification.save()
+
+        return Response(serializer.data)
 
 
 class AcceptRequestView(views.APIView):
-    def post(self, request, id, request_id):
-        print("The id is", id)
+
+    # TODO: `IsObjectOwner`
+    permission_classess = [IsAuthenticated]
+
+    def post(self, request, request_id):
         friend_request = FriendRequest.objects.filter(id=request_id).first()
         friend_request.accepted = True
         user_sender = User.objects.get(id=friend_request.sender.id)
@@ -154,17 +175,27 @@ class AcceptRequestView(views.APIView):
         )
         notification.save()
         friend_request.save()
+
         serializer = FriendRequestSerializer(friend_request)
+
         return Response(serializer.data)
 
 
 class DeclineRequestView(views.APIView):
-    def post(self, request, id, request_id):
-        friend_request = FriendRequest.objects.filter(id=request_id).first()
+
+    # TODO: `IsObjectOwner`
+    permission_classess = [IsAuthenticated]
+
+    def post(self, request, request_id):
+        friend_request = get_object_or_404(FriendRequest, id=request_id)
+
         if friend_request.accepted == True:
             return Response({"Message": "You have already accepted this request"})
         friend_request.delete()
-        return Response({"Message": "Request Has Been Deleted"})
+
+        return Response(
+            {"Message": "Request Has Been Deleted"}, status=status.HTTP_204_NO_CONTENT
+        )
 
 
 class NotificationsView(views.APIView):

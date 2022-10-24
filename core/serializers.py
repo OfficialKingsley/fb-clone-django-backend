@@ -1,12 +1,10 @@
 """Serializers for the core/user module"""
 
-from django.contrib.auth import get_user_model
-from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from core.models import FriendRequest, Notification
 
-from posts.models import Post
+from core.models import FriendRequest, Notification
 
 User = get_user_model()
 
@@ -32,6 +30,10 @@ class UserSerializer(serializers.ModelSerializer):
             "theme",
         )
 
+    # drf `get_<property_name>` method
+    def get_full_name(self, obj: User):
+        return obj.full_name
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     """Serializer to register a user"""
@@ -39,7 +41,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         max_length=150, required=True, write_only=True, min_length=8
     )
-    password2 = serializers.CharField(
+    confirm_password = serializers.CharField(
         max_length=150, required=True, write_only=True, min_length=8
     )
     email = serializers.EmailField(
@@ -63,26 +65,19 @@ class RegisterSerializer(serializers.ModelSerializer):
             "last_name",
             "date_of_birth",
             "password",
-            "password2",
+            "confirm_password",
         ]
 
     def validate(self, attrs):
-        if attrs["password"] != attrs["password2"]:
+        if attrs["password"] != attrs["confirm_password"]:
             raise serializers.ValidationError("Passwords Didn't match")
-        if not attrs["first_name"]:
-            raise ValueError("First name is Required")
+
         return attrs
 
     def create(self, validated_data):
-        user = User.objects.create_user(
-            email=validated_data["email"],
-            first_name=validated_data["first_name"],
-            middle_name=validated_data["middle_name"],
-            last_name=validated_data["last_name"],
+        return User.objects.create_user(
+            **validated_data,
         )
-        user.set_password(validated_data["password"])
-        user.save()
-        return user
 
 
 class LoginSerializer(serializers.ModelSerializer):
@@ -95,17 +90,12 @@ class LoginSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         email = validated_data["email"]
         password = validated_data["password"]
-        try:
-            user = User.objects.filter(email=email).first()
-            if user is not None:
-                if user.check_password(password):
-                    user.is_active = True
-                    user.save()
-                    return user
-                else:
-                    raise ValueError("Incorrect Password")
-        except ObjectDoesNotExist:
-            raise ModuleNotFoundError("User not found")
+
+        user = authenticate(email=email, password=password)
+        if not user:
+            raise serializers.ValidationError("Invalid Credentials")
+
+        return user
 
 
 class FriendRequestSerializer(serializers.ModelSerializer):
