@@ -21,10 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "SECRET_KEY",
-    default="postgres://kingsley:zFfCEeqDE68vLqdKMJIY29NcQd6Cvcpf@dpg-cd71t5ien0hguptipno0-a.oregon-postgres.render.com/fbclone",
-)
+SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = "RENDER" not in os.environ
@@ -45,10 +42,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "core",
-    "posts",
     "corsheaders",
     "rest_framework",
+    # local apps
+    "core",
+    "posts",
 ]
 
 MIDDLEWARE = [
@@ -99,9 +97,10 @@ WSGI_APPLICATION = "backend.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
+
 DATABASES = {
     "default": dj_database_url.config(
-        default="postgres://kingsley:zFfCEeqDE68vLqdKMJIY29NcQd6Cvcpf@dpg-cd71t5ien0hguptipno0-a.oregon-postgres.render.com/fbclone",
+        default=os.environ["DATABASE_URL"],
         conn_max_age=600,
     ),
 }
